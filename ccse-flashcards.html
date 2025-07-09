@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCSE Flashcards - Test de Nacionalidad Española</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            background-color: #DAA520;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .logo-container {
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            width: 20px;
+            height: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .progress-bar {
+            background-color: rgba(255, 255, 255, 0.3);
+            height: 8px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress {
+            background-color: #fff;
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .question-counter {
+            text-align: center;
+            color: #fff;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .flashcard-container {
+            perspective: 1000px;
+            width: 100%;
+            height: 400px;
+            margin-bottom: 30px;
+        }
+
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+        }
+
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+        }
+
+        .question-number {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .question-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
+        .options {
+            list-style: none;
+        }
+
+        .option {
+            margin-bottom: 15px;
+            padding: 12px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            font-size: 16px;
+            color: #333;
+            transition: background-color 0.3s ease;
+        }
+
+        .option:hover {
+            background-color: #e0e0e0;
+        }
+
+        .answer-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2ecc71;
+            text-align: center;
+        }
+
+        .flip-hint {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: 700;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #DAA520;
+            background-color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 600px) {
+            .flashcard-container {
+                height: 450px;
+            }
+            
+            .question-text {
+                font-size: 18px;
+            }
+            
+            .option {
+                font-size: 14px;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="logo-container">
+        <img src="https://www.conjugar.es/wp-content/uploads/2024/09/New-Project.png" alt="Logo" class="logo">
+    </div>
+
+    <div class="container">
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+
+        <div class="question-counter">
+            Pregunta <span id="current">1</span> de <span id="total">300</span>
+        </div>
+
+        <div class="flashcard-container">
+            <div class="flashcard" id="flashcard">
+                <div class="card-face card-front">
+                    <div class="question-number" id="questionNumber">#1</div>
+                    <div class="question-text" id="questionText"></div>
+                    <ul class="options" id="options"></ul>
+                    <div class="flip-hint">Click para ver la respuesta</div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="answer-text" id="answerText"></div>
+                    <div class="flip-hint">Click para volver a la pregunta</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" id="prevBtn" onclick="previousQuestion()">Anterior</button>
+            <button class="btn" id="nextBtn" onclick="nextQuestion()">Siguiente</button>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: "España es --",
+                options: ["A una monarquía parlamentaria", "B una república federal", "C una monarquía federal"],
+                answer: "A una monarquía parlamentaria"
+            },
+            {
+                question: "La Ley Fundamental de España se llama --",
+                options: ["A Constitución", "B Ley Básica", "C Ordenamiento Esencial"],
+                answer: "A Constitución"
+            },
+            {
+                question: "Según la Constitución Española la soberanía nacional reside en --",
+                options: ["A el Pueblo Español", "B el Gobierno del Estado", "C el Congreso de los Diputados"],
+                answer: "A el Pueblo Español"
+            },
+            {
+                question: "El Instituto de las Mujeres es --",
+                options: ["A una institución europea", "B un organismo español", "C una ONG"],
+                answer: "B un organismo español"
+            },
+            {
+                question: "Cuantas religiones oficiales hay en España --",
+                options: ["A ninguna", "B una", "C dos"],
+                answer: "A ninguna"
+            },
+            {
+                question: "El castellano o español es lengua oficial --",
+                options: ["A en toda España", "B solo donde no hay otras lenguas", "C en toda la Península Ibérica"],
+                answer: "A en toda España"
+            },
+            {
+                question: "Cuál de estas fuerzas de seguridad es de ámbito autonómico --",
+                options: ["A Policía Local", "B Guardia Civil", "C Policía Foral de Navarra"],
+                answer: "C Policía Foral de Navarra"
+            },
+            {
+                question: "Qué fuerza de seguridad está en toda España --",
+                options: ["A la ertzancha", "B el Cuerpo Nacional de Policía", "C los Mossos de Escuadra"],
+                answer: "B el Cuerpo Nacional de Policía"
+            },
+            {
+                question: "En la Constitución se establece la separación de poderes el Poder Ejecutivo el Legislativo y el --",
+                options: ["A judicial", "B informativo", "C político"],
+                answer: "A judicial"
+            },
+            {
+                question: "La bandera de España debe utilizarse --",
+                options: ["A solo los días de fiesta oficial", "B en todos los edificios públicos", "C solo en actos del gobierno español"],
+                answer: "B en todos los edificios públicos"
+            },
+            {
+                question: "El organismo que gestiona los impuestos estatales de España es --",
+                options: ["A el Consejo Económico y Social", "B el Instituto Nacional de Estadística", "C la Agencia Tributaria"],
+                answer: "C la Agencia Tributaria"
+            },
+            {
+                question: "La gestión de la sanidad es competencia de --",
+                options: ["A el Estado", "B las comunidades autónomas", "C los ayuntamientos"],
+                answer: "B las comunidades autónomas"
+            },
+            {
+                question: "Quien fue el primer presidente del Gobierno de España en democracia --",
+                options: ["A Mariano Rajoy", "B Adolfo Suárez", "C José Luis Rodríguez Zapatero"],
+                answer: "B Adolfo Suárez"
+            },
+            {
+                question: "Cuál de estos organismos se encarga de interpretar la Constitución --",
+                options: ["A el poder constitucional", "B el Tribunal Constitucional", "C el Consejo General del Poder Judicial"],
+                answer: "B el Tribunal Constitucional"
+            },
+            {
+                question: "Quien modera el funcionamiento de las instituciones españolas --",
+                options: ["A el presidente del Gobierno", "B el rey", "C el director de la Real Academia Española"],
+                answer: "B el rey"
+            },
+            {
+                question: "Cómo se llama la Cámara de representación territorial en España --",
+                options: ["A Senado", "B Diputación Permanente", "C Congreso de los Diputados"],
+                answer: "A Senado"
+            },
+            {
+                question: "Cuantas ciudades autónomas hay en España --",
+                options: ["A diecisiete", "B dos", "C cincuenta"],
+                answer: "B dos"
+            },
+            {
+                question: "Cómo se aprobó la Constitución --",
+                options: ["A por ley", "B en referéndum", "C lo mandó el rey"],
+                answer: "B en referéndum"
+            },
+            {
+                question: "Cómo se llama la ley más importante de cada comunidad autónoma --",
+                options: ["A Estatuto de Autonomía", "B normativa autonómica", "C ley de la comunidad"],
+                answer: "A Estatuto de Autonomía"
+            },
+            {
+                question: "Las instalaciones culturales y deportivas públicas son competencia de él --",
+                options: ["A Ayuntamiento", "B Ministerio de Educación", "C gobierno federal"],
+                answer: "A Ayuntamiento"
+            },
+            {
+                question: "Quien dirige la Administración Militar de España --",
+                options: ["A los ayuntamientos", "B el gobierno", "C las Cortes Generales"],
+                answer: "B el gobierno"
+            },
+            {
+                question: "Que hay en las Islas Baleares en vez de diputaciones --",
+                options: ["A cabildos", "B Consejos Insulares", "C congresos"],
+                answer: "B consejos insulares"
+            },
+            {
+                question: "Qué ciudad tiene más habitantes --",
+                options: ["A Sevilla", "B Barcelona", "C Zaragosa"],
+                answer: "B Barcelona"
+            },
+            {
+                question: "Las Cortes Generales representan --",
+                options: ["A al pueblo español", "B a los partidos políticos", "C a los ministros"],
+                answer: "A al pueblo español"
+            },
+            {
+                question: "El Congreso de los Diputados y el Senado constituyen el poder --",
+                options: ["A Ejecutivo", "B legislativo", "C judicial"],
+                answer: "B legislativo"
+            },
+            {
+                question: "Qué ley dicta el gobierno en casos de especial urgencia --",
+                options: ["A el Decreto Ley", "B la ley ordinaria", "C la Ley Orgánica"],
+                answer: "A el Decreto Ley"
+            },
+            {
+                question: "Cuántas comunidades autónomas hay en España --",
+                options: ["A ocho", "B diecisiete", "C 25"],
+                answer: "B 17"
+            },
+            {
+                question: "Los colores de la bandera española son --",
+                options: ["A blanco y rojo", "B rojo y amarillo", "C amarillo y blanco"],
+                answer: "B rojo y amarillo"
+            },
+            {
+                question: "La sede del Gobierno de España --",
+                options: ["A en Madrid", "B en Barcelona", "C en Sevilla"],
+                answer: "A en Madrid"
+            },
+            {
+                question: "La bandera azul con doce estrellas amarillas en círculo es la bandera de --",
+                options: ["A la Unión Europea", "B la organización de Seguridad y Cooperación en Europa", "C la Comisión de Europa"],
+                answer: "A la Unión Europea"
+            },
+            {
+                question: "Een las elecciones generales se vota --",
+                options: ["A a diputados y senadores", "B ministros y ministras", "C alcaldes y concejales"],
+                answer: "A diputados y senadores"
+            },
+            {
+                question: "Qué lengua es oficial en el País Vasco --",
+                options: ["A el bable", "B el aragonés", "C el euskera"],
+                answer: "C el euskera"
+            },
+            {
+                question: "Todos los españoles tienen el deber de conocer la lengua --",
+                options: ["A autonómica del Estado", "B Oficial del Estado", "C local del Estado"],
+                answer: "B Oficial del Estado"
+            },
+            {
+                question: "El aranés es una lengua cooficial que se habla en un pequeño territorio de --",
+                options: ["A Cataluña", "B La Rioja", "C Aragón"],
+                answer: "A Cataluña"
+            },
+            {
+                question: "Las instituciones de una comunidad autónoma son la Asamblea Legislativa el Consejo de Gobierno y --",
+                options: ["A la Diputación", "B el presidente", "C el delegado de gobierno"],
+                answer: "B el presidente"
+            },
+            {
+                question: "Cuál de estas opciones es una lengua cooficial en alguna comunidad autónoma --",
+                options: ["A el gallego", "B el aragonés", "C el murciano"],
+                answer: "A el gallego"
+            },
+            {
+                question: "Qué institución tiene como fin la promoción de la enseñanza de la lengua española y la difusión de la cultura en español --",
+                options: ["A Instituto Nacional de Administración Pública", "B Instituto Nacional de Estadística", "C Instituto Cervantes"],
+                answer: "C Instituto Cervantes"
+            },
+            {
+                question: "Cuál de los siguientes organismos trabaja para conseguir la normalización lingüística --",
+                options: ["A el Instituto Ramón Llull", "B el Instituto Cervantes", "C la Real Academia Española"],
+                answer: "C la Real Academia Española"
+            },
+            {
+                question: "Dónde vive el presidente del Gobierno --",
+                options: ["A en el Palacio Real", "B en el Palacio de la Zarzuela", "C en el Palacio de la Moncloa"],
+                answer: "C en el Palacio de la Moncloa"
+            },
+            {
+                question: "Cuál de los siguientes cuerpos forma parte de las Fuerzas Armadas de España --",
+                options: ["A la Policía Foral", "B la Guardia Civil", "C el Ejército del Aire"],
+                answer: "C el Ejército del Aire"
+            },
+            {
+                question: "Quienes forman parte del gobierno --",
+                options: ["A los ministros", "B los concejales", "C los alcaldes"],
+                answer: "A los ministros"
+            },
+            {
+                question: "España es un --",
+                options: ["A Estado social y democrático de Derecho", "B Estado Libre Asociado", "C Estado confederado"],
+                answer: "A Estado social y democrático de derecho"
+            },
+            {
+                question: "Cuál de las siguientes siglas corresponde a un partido político --",
+                options: ["A PP", "B Pip", "C UE"],
+                answer: "A PP"
+            },
+            {
+                question: "Qué título tiene la futura reina hija del rey --",
+                options: ["A Princesa de Asturias", "B Princesa de Aragón", "C Duquesa de Alba"],
+                answer: "A Princesa de Asturias"
+            },
+            {
+                question: "Con qué rey se restaura la democracia en España después del régimen de Franco --",
+                options: ["A con Carlos III", "B con Alfonso XIII", "C con Juan Carlos I"],
+                answer: "C con Juan Carlos I"
+            },
+            {
+                question: "En qué año se aprobó la Constitución española --",
+                options: ["A en 1957", "B en 1978", "C en 2001"],
+                answer: "B en 1978"
+            },
+            {
+                question: "Cuantas comunidades autónomas tienen su propia bandera --",
+                options: ["A ninguna", "B todas", "C las que tienen una lengua cooficial"],
+                answer: "B todas"
+            },
+            {
+                question: "Qué organismo oficial atiende de las quejas de los ciudadanos por el mal funcionamiento de las administraciones --",
+                options: ["A la Oficina de Atención al Consumidor", "B la Policía Nacional", "C el Defensor del Pueblo"],
+                answer: "C el Defensor del Pueblo"
+            },
+            {
+                question: "Cuántas firmas como mínimo deben recoger los ciudadanos para poder presentar una proposición de ley --",
+                options: ["A 250.000", "B 100.000", "C 500.000"],
+                answer: "C 500,000"
+            },
+            {
+                question: "Cuál de estas organizaciones internacionales pertenece a España --",
+                options: ["A al Mercado Común del Sur Mercosur", "B a la Organización de las Naciones Unidas ONU", "C a la unión económica euroasiática UEE"],
+                answer: "B a la Organización de las Naciones Unidas ONU"
+            },
+            {
+                question: "En la organización de la administración se distinguen tres niveles Central Autonómica y --",
+                options: ["A estatal", "B regional", "C local"],
+                answer: "C local"
+            },
+            {
+                question: "El poder legislativo corresponde --",
+                options: ["A al Presidente y los ministros", "B a los jueces y magistrados", "C a los diputados y senadores"],
+                answer: "C a los diputados y senadores"
+            },
+            {
+                question: "Dónde vive el rey --",
+                options: ["A en el Palacio de La Moneda", "B en el Palacio de la Zarzuela", "C en el Palacio de la Moncloa"],
+                answer: "B en el Palacio de la Zarzuela"
+            },
+            {
+                question: "El nombre oficial del Parlamento español es --",
+                options: ["A Cortes Generales", "B Congreso de los Diputados que Senado"],
+                answer: "A Cortes Generales"
+            },
+            {
+                question: "El gobierno está formado por el presidente uno o más vicepresidentes y los --",
+                options: ["A concejales", "B ministros", "C gobernadores"],
+                answer: "B ministro"
+            },
+            {
+                question: "El Tribunal de Cuentas depende de --",
+                options: ["A la Presidencia del Gobierno", "B las Cortes Generales", "C el Ministerio de Hacienda"],
+                answer: "B las Cortes Generales"
+            },
+            {
+                question: "Quién es la tercera autoridad del Estado después del Rey y el presidente del Gobierno --",
+                options: ["A el presidente del Senado", "B el ministro de Economía", "C el presidente del Congreso de los Diputados"],
+                answer: "C el presidente del Congreso de los Diputados"
+            },
+            {
+                question: "Qué lengua cooficial se habla en las Islas Baleares --",
+                options: ["A Gallego", "B catalán", "C euskera"],
+                answer: "B catalán"
+            },
+            {
+                question: "La Constitución defiende valores tales como la libertad la igualdad el pluralismo político y --",
+                options: ["A la justicia", "B la solidaridad", "C la fraternidad"],
+                answer: "A la justicia"
+            },
+            {
+                question: "Cuántos kilómetros cuadrados tiene España más o menos --",
+                options: ["A 100.000", "B 500.000", "C 1 millón"],
+                answer: "B 500.000"
+            },
+            {
+                question: "Cuantos millones de habitantes tiene España --",
+                options: ["A cuarenta y ocho millones", "B 35 millones", "C 62 millones"],
+                answer: "A 48 millones"
+            },
+            {
+                question: "Cuál de estos es un órgano consultivo del Gobierno de España --",
+                options: ["A el Parlamento Europeo", "B el Consejo de Estado", "C el Tribunal Constitucional"],
+                answer: "B el Consejo de Estado"
+            },
+            {
+                question: "Quién dirige la política interior y exterior de España --",
+                options: ["A el rey", "B el gobierno", "C el Congreso de los Diputados"],
+                answer: "B el gobierno"
+            },
+            {
+                question: "El Defensor del Pueblo depende de --",
+                options: ["A el Consejo de Ministros", "B el Tribunal de Cuentas", "C las Cortes Generales"],
+                answer: "C las Cortes Generales"
+            },
+            {
+                question: "El Instituto Echepare tiene como misión la difusión del --",
+                options: ["A el euskera y la cultura vasca", "B bable y la cultura cántabra", "C gallego y la cultura galaica"],
+                answer: "A el euskera y la cultura vasca"
+            },
+            {
+                question: "La Comunidad Iberoamericana de Naciones está formada por --",
+                options: ["A veintidos países de América y Europa", "B América del Sur y España", "C todos los países donde se habla español"],
+                answer: "A 22 países de América y Europa"
+            },
+            {
+                question: "La Secretaría será el de Política Lingüística difunde y promociona la lengua y la cultura --",
+                options: ["A catalanas", "B gallegas", "C vascas"],
+                answer: "B gallegas"
+            },
+            {
+                question: "Cómo se llama el rey de España --",
+                options: ["A Juan Carlos I", "B Felipe VI", "C Alfonso XIII"],
+                answer: "B Felipe VI"
+            },
+            {
+                question: "Cómo se llama el órgano de gobierno de los jueces y magistrados --",
+                options: ["A Tribunal Supremo", "B Consejo General del Poder Judicial", "C Consejo de Estado"],
+                answer: "B Consejo General del Poder Judicial"
+            },
+            {
+                question: "Quién aprueba los presupuestos generales del Estado --",
+                options: ["A las Cortes Generales", "B la Junta Electoral Central", "C el rey"],
+                answer: "A las Cortes Generales"
+            },
+            {
+                question: "La Constitución Española es --",
+                options: ["A la Ley Fundamental", "B parte de otra ley", "C una ley secundaria"],
+                answer: "A la Ley Fundamental"
+            },
+            {
+                question: "Las Cortes Generales están compuestas por el Senado y --",
+                options: ["A el Congreso de los Diputados", "B el Tribunal Supremo", "C el Consejo de Estado"],
+                answer: "A el Congreso de los Diputados"
+            },
+            {
+                question: "Quién elabora las leyes --",
+                options: ["A el Poder Ejecutivo", "B el Poder Legislativo", "C el Poder Judicial"],
+                answer: "B el poder legislativo"
+            },
+            {
+                question: "La defensa de la integridad territorial de España corresponde --",
+                options: ["A la Policía Nacional y la Guardia Civil", "B las Fuerzas Armadas", "C la Policía Nacional y las policías autonómicas"],
+                answer: "B las Fuerzas Armadas"
+            },
+            {
+                question: "El ejército español participa desde 1989 en misiones de paz de la --",
+                options: ["A Organización de Estados Iberoamericanos hoy", "B Unión Europea Occidental UEO", "C Organización de Naciones Unidas ONU"],
+                answer: "C Organización de Naciones Unidas ONU"
+            },
+            {
+                question: "Quien vigila puertos y aeropuertos fronteras y costas --",
+                options: ["A la Guardia Civil", "B la Policía Local", "C la Policía Nacional"],
+                answer: "A la Guardia Civil"
+            },
+            {
+                question: "Quién hace el control de pasaportes en las fronteras de España --",
+                options: ["A la Guardia Civil", "B la Policía Local", "C la Policía Nacional"],
+                answer: "C la Policía Nacional"
+            },
+            {
+                question: "Quien controla la circulación de coches en las ciudades --",
+                options: ["A la Guardia Civil", "B la Policía Local", "C la Policía Nacional"],
+                answer: "B la Policía Local"
+            },
+            {
+                question: "Cómo se llama la policía autonómica de Cataluña --",
+                options: ["A Guardia Civil", "B Elsa", "C Mossos d'Esquadra"],
+                answer: "C Mossos de Escuadra"
+            },
+            {
+                question: "Cómo se llama la policía autonómica del País Vasco --",
+                options: ["A la Ertzaintza", "B Guardia Civil", "C Mossos de Escuadra"],
+                answer: "A Ertzaintza"
+            },
+            {
+                question: "Desde que año es rey Felipe VI --",
+                options: ["A desde 1975", "B desde 2014", "C desde 2020"],
+                answer: "B desde 2014"
+            },
+            {
+                question: "Quién regula el tráfico en los pueblos y ciudades --",
+                options: ["A la Guardia Civil", "B Protección Civil", "C la Policía Local"],
+                answer: "C la Policía Local"
+            },
+            {
+                question: "Quién puede presentar una queja al Defensor del Pueblo --",
+                options: ["A solo los ciudadanos legalmente residentes", "B solo los españoles mayores de dieciocho años", "C todos los ciudadanos españoles o extranjeros"],
+                answer: "C todos los ciudadanos españoles o extranjeros"
+            },
+            {
+                question: "En España el voto en las elecciones es --",
+                options: ["A un derecho", "B un deber", "C una obligación"],
+                answer: "A un derecho"
+            },
+            {
+                question: "Quién vigila el tráfico en las carreteras --",
+                options: ["A la Guardia Civil", "B la Policía Nacional", "C el Ejército de Tierra"],
+                answer: "A la Guardia Civil"
+            },
+            {
+                question: "Qué organismos se encarga de recaudar los impuestos --",
+                options: ["A el Tribunal de Cuentas", "B la Agencia Tributaria", "C el Consejo Económico y Social"],
+                answer: "B la Agencia Tributaria"
+            },
+            {
+                question: "Donde se publican las leyes nacionales --",
+                options: ["A en el Boletín del Instituto Nacional de Estadística INE", "B en el portal de la Administración Electrónica PAE", "C en el Boletín Oficial del Estado BOE"],
+                answer: "C en el Boletín Oficial del Estado BOE"
+            },
+            {
+                question: "Cómo se llaman los órganos de gobierno que solo existen en Canarias --",
+                options: ["A cabildos", "B Consejos Insulares", "C diputaciones"],
+                answer: "A cabildos"
+            },
+            {
+                question: "Donde ofrece el Gobierno toda la información sobre novedades e iniciativas de la administración electrónica --",
+                options: ["A en el INE Instituto Nacional de Estadística", "B en el BOE Boletín Oficial del Estado", "C en el PAE portal de la Administración Electrónica"],
+                answer: "C en el PAE portal de la Administración Electrónica"
+            },
+            {
+                question: "Cuál es el número de teléfono de información de la Administración General del Estado --",
+                options: ["A 010", "B 060", "C 091"],
+                answer: "B 060"
+            },
+            {
+                question: "España está organizada en --",
+                options: ["A cantones", "B comunidades autónomas", "C estados federales"],
+                answer: "B comunidades autónomas"
+            },
+            {
+                question: "Cuantos partidos políticos hay en España --",
+                options: ["A ninguno", "B uno", "C muchos"],
+                answer: "C muchos"
+            },
+            {
+                question: "Dónde tiene lugar la investidura del presidente del Gobierno --",
+                options: ["A en el Palacio de la Moncloa", "B en el Congreso de los Diputados", "C en el Senado"],
+                answer: "B en el Congreso de los Diputados"
+            },
+            {
+                question: "Quien tiene el mando supremo de las Fuerzas Armadas --",
+                options: ["A el rey", "B el presidente del Gobierno", "C el ministro de Defensa"],
+                answer: "A el rey"
+            },
+            {
+                question: "Quién es el representante del Estado en una comunidad autónoma --",
+                options: ["A el presidente de la Comunidad Autónoma", "B el delegado del Gobierno", "C el presidente de la Asamblea autonómica"],
+                answer: "B el delegado del Gobierno"
+            },
+            {
+                question: "Cuántas provincias hay en España --",
+                options: ["A 45", "B 50", "C 55"],
+                answer: "B 50"
+            },
+            {
+                question: "La enseñanza de las lenguas cooficiales es competencia --",
+                options: ["A del Estado", "B de la Comunidad Autónoma", "C de la provincia"],
+                answer: "B de la Comunidad Autónoma"
+            },
+            {
+                question: "El Poder Ejecutivo corresponde --",
+                options: ["A al Gobierno del Estado", "B al Congreso y al Senado", "C a los jueces y magistrados"],
+                answer: "A al Gobierno del Estado"
+            },
+            {
+                question: "Cuántas cámaras hay en el Parlamento español --",
+                options: ["A 1", "B 2", "C 3"],
+                answer: "B 2"
+            },
+            {
+                question: "El suministro de agua y el alumbrado de las ciudades es competencia de --",
+                options: ["A el Ayuntamiento", "B el Gobierno autonómico", "C el Ministerio de Obras Públicas y Urbanismo"],
+                answer: "A el Ayuntamiento"
+            },
+            {
+                question: "En materias como nacionalidad y migración emigración o Extranjería sólo tiene competencia --",
+                options: ["A el Estado", "B las comunidades autónomas", "C los ayuntamientos"],
+                answer: "A el Estado"
+            },
+            {
+                question: "Cuántas mujeres han sido presidentas de gobierno en España --",
+                options: ["A ninguna", "B 1", "C 2"],
+                answer: "A ninguna"
+            },
+            {
+                question: "Las relaciones internacionales son competencia de --",
+                options: ["A el Estado", "B las comunidades autónomas", "C los ayuntamientos"],
+                answer: "A el Estado"
+            },
+            {
+                question: "El Ayuntamiento está formado por el alcalde y --",
+                options: ["A los concejales", "B los diputados", "C los senadores"],
+                answer: "A los concejales"
+            },
+            {
+                question: "Quienes forman el gobierno de las Comunidades Autónomas --",
+                options: ["A el presidente y los ministros", "B el alcalde y los concejales", "C el presidente y los consejeros"],
+                answer: "C el presidente y los consejeros"
+            },
+            {
+                question: "Cuál es el órgano de gobierno en los municipios --",
+                options: ["A el Ayuntamiento", "B la Diputación", "C el Cabildo"],
+                answer: "A el Ayuntamiento"
+            },
+            {
+                question: "Cómo se llaman los órganos de gobierno de las provincias españolas --",
+                options: ["A cabildos", "B Consejos Insulares", "C diputaciones"],
+                answer: "C diputaciones"
+            },
+            {
+                question: "Cuál es el órgano superior del Poder Ejecutivo --",
+                options: ["A el gobierno", "B las Fuerzas Armadas", "C las Cortes Generales"],
+                answer: "A el gobierno"
+            },
+            {
+                question: "El idioma español también se llama --",
+                options: ["A aragonés", "B castellano", "C leonés"],
+                answer: "B castellano"
+            },
+            {
+                question: "A quienes eligen las elecciones al Parlamento Europeo --",
+                options: ["A a los ministros europeos", "B a los consejeros delegados", "C a los eurodiputados"],
+                answer: "C a los eurodiputados"
+            },
+            {
+                question: "Los españoles pueden votar a partir de los --",
+                options: ["A 16 años", "B 18 años", "C 21 años"],
+                answer: "B 18 años"
+            },
+            {
+                question: "Algunos ciudadanos extranjeros pueden votar en las elecciones --",
+                options: ["A municipales", "B autonómicas", "C generales"],
+                answer: "A municipales"
+            },
+            {
+                question: "Quien controla la gestión financiera del Estado --",
+                options: ["A el Banco de España", "B la Agencia Tributaria", "C el Tribunal de Cuentas"],
+                answer: "C el Tribunal de Cuentas"
+            },
+            {
+                question: "A quienes se eligen las elecciones generales --",
+                options: ["A a los senadores y diputados", "B a los eurodiputados", "C a los concejales"],
+                answer: "A a los senadores y diputados"
+            },
+            {
+                question: "De cuántos miembros se compone el Congreso de los Diputados en la actualidad --",
+                options: ["A 300", "B 350", "C 400"],
+                answer: "B 350"
+            },
+            {
+                question: "Los Municipios y Provincias forman parte de la Administración --",
+                options: ["A autonómica", "B local", "C central"],
+                answer: "B local"
+            },
+            {
+                question: "La Comunidad Autónoma más poblada de España es --",
+                options: ["A Andalucía", "B Cataluña", "C Castilla y León"],
+                answer: "A Andalucía"
+            },
+            {
+                question: "Cómo se llama la organización que defiende los intereses de los trabajadores --",
+                options: ["A asociación", "B partido", "C sindicato"],
+                answer: "C sindicato"
+            },
+            {
+                question: "Cuál de las siguientes personalidades ha sido presidente del Gobierno de España",
+                options: ["A José María Aznar", "B Manuel Fraga", "C dolores y barruri"],
+                answer: "A José María Aznar"
+            },
+            {
+                question: "La mayoría de edad en España es a los 16 años --",
+                options: ["A verdadero", "B falso"],
+                answer: "B falso"
+            },
+            {
+                question: "Los españoles que obtienen la nacionalidad por residencia deben esperar tres años para poder votar en las elecciones --",
+                options: ["A verdadero", "B falso"],
+                answer: "B falso"
+            },
+            {
+                question: "Los jóvenes tienen derecho a participar libremente en el desarrollo político del país --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "El funcionamiento de los partidos políticos tiene que ser democrático --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "Se puede obligar a alguien a decir cuáles son sus ideas políticas o religiosas --",
+                options: ["A verdadero", "B falso"],
+                answer: "B falso"
+            },
+            {
+                question: "Se puede limitar a una persona el derecho a entrar y salir libremente de España por motivos ideológicos --",
+                options: ["A verdadero", "B falso"],
+                answer: "B falso"
+            },
+            {
+                question: "La educación primaria de seis a doce años es gratuita y obligatoria --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "La Constitución garantiza el derecho de los españoles a una vivienda digna --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "En España la policía puede entrar en cualquier casa sin resolución judicial en cualquier momento --",
+                options: ["A verdadero", "B falso"],
+                answer: "B falso"
+            },
+            {
+                question: "Se garantiza el secreto de las comunicaciones de los españoles salvo resolución judicial --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "Todos los españoles ya sean mayores o menores de edad tienen derecho a votar en las elecciones --",
+                options: ["A verdadero", "B falso"],
+                answer: "B falso"
+            },
+            {
+                question: "Los profesores pueden enseñar con libertad dentro de los límites de la Constitución --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "La Constitución reconoce únicamente los derechos fundamentales de los españoles --",
+                options: ["A verdadero", "B falso"],
+                answer: "B falso"
+            },
+            {
+                question: "En España existe la pena de muerte --",
+                options: ["A verdadero", "B falso"],
+                answer: "B falso"
+            },
+            {
+                question: "La ley limita el acceso de terceras personas a datos de carácter personal --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "La libertad de prensa está limitada por el respeto al honor de las personas --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "En España se regulan mediante ley las causas de separación y disolución matrimonial --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "Todos los españoles pagan la misma cantidad de impuestos --",
+                options: ["A verdadero", "B falso"],
+                answer: "B falso"
+            },
+            {
+                question: "Se puede ser condenado sancionado por acciones u omisiones que en el momento de producirse no constituían delito --",
+                options: ["A verdadero", "B falso"],
+                answer: "B falso"
+            },
+            {
+                question: "La enseñanza obligatoria consta de dos etapas Educación Primaria y Educación Secundaria Obligatoria --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "En España hay una religión oficial --",
+                options: ["A verdadero", "B falso"],
+                answer: "B falso"
+            },
+            {
+                question: "Los ciudadanos tienen derecho a la atención sanitaria --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "Los poderes públicos deben promover la educación física y el deporte --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "En España está reconocido el derecho de asociación --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "En caso de huelga la ley garantiza el mantenimiento de los servicios esenciales de la comunidad --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "Los trabajadores tienen derecho a hacer huelga --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "La libertad ideológica está garantizada sólo en parte del territorio nacional --",
+                options: ["A verdadero", "B falso"],
+                answer: "B falso"
+            },
+            {
+                question: "Todos los ciudadanos tienen acceso al sistema de seguridad social público excepto si están desempleados --",
+                options: ["A verdadero", "B falso"],
+                answer: "B falso"
+            },
+            {
+                question: "Todos tienen derecho a disfrutar de un medio ambiente adecuado para el desarrollo de la persona así como el deber de conservarlo --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "Todo el mundo tiene derecho a expresar su opinión --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "En España la edad mínima para casarse es de catorce años --",
+                options: ["A verdadero", "B falso"],
+                answer: "B falso"
+            },
+            {
+                question: "La ley prohíbe la discriminación por cualquier circunstancia personal o social --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "Los poderes públicos garantizan la defensa de los consumidores --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "En España cualquier ciudadano mayor de edad puede presentarse a las elecciones --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "Los españoles deben ayudar en los casos de catástrofe o calamidad pública --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "Los poderes públicos garantizan la libertad de movimiento de los ciudadanos en el territorio nacional --",
+                options: ["A verdadero", "B falso"],
+                answer: "A verdadero"
+            },
+            {
+                question: "Dónde están Cáceres y Badajoz --",
+                options: ["A en el Principado de Asturias", "B en Andalucía", "C en Extremadura"],
+                answer: "C en Extremadura"
+            },
+            {
+                question: "La capital de la Comunidad Autónoma de Cantabria es --",
+                options: ["A Oviedo", "B Palma de Mallorca", "C Santander"],
+                answer: "C Santander"
+            },
+            {
+                question: "Dónde están las Islas Baleares --",
+                options: ["A en el Mar Cantábrico", "B en el mar Mediterráneo", "C en el Océano Atlántico"],
+                answer: "B en el mar Mediterráneo"
+            },
+            {
+                question: "En qué parte de España está situada la meseta --",
+                options: ["A en el norte", "B en el sur", "C en el centro"],
+                answer: "C en el centro"
+            },
+            {
+                question: "El pico más alto de España con 3,718 metros es --",
+                options: ["A el Mulhacén", "B el Aneto", "C El Teide"],
+                answer: "C el Teide"
+            },
+            {
+                question: "Cuantas comunidades autónomas hay en España --",
+                options: ["A 7", "B 17", "C 27"],
+                answer: "B 17"
+            },
+            {
+                question: "Toledo es la capital de --",
+                options: ["A Castilla La Mancha", "B Extremadura", "C Castilla y León"],
+                answer: "A Castilla La Mancha"
+            },
+            {
+                question: "Almería está en --",
+                options: ["A Andalucía", "B Canarias", "C Aragón"],
+                answer: "A Andalucía"
+            },
+            {
+                question: "La capital de la Comunidad Autónoma de Galicia es --",
+                options: ["A Coruña", "B Vigo", "C Santiago de Compostela"],
+                answer: "C Santiago de Compostela"
+            },
+            {
+                question: "Cuál de estos climas es propio de España --",
+                options: ["A polar", "B Mediterráneo", "C tropical"],
+                answer: "B Mediterráneo"
+            },
+            {
+                question: "Huesca, Teruel y Zaragoza están en --",
+                options: ["A Catalunya", "B País Vasco", "C Aragón"],
+                answer: "C Aragón"
+            },
+            {
+                question: "Zaragoza está en --",
+                options: ["A Aragón", "B Andalucía", "C Castilla y León"],
+                answer: "A Aragón"
+            },
+            {
+                question: "España se divide en --",
+                options: ["A departamentos y regiones", "B Comunidades y Ciudades Autónomas", "C regiones autónomas y distritos"],
+                answer: "B Comunidades y Ciudades Autónomas"
+            },
+            {
+                question: "Cuál de estas comunidades autónomas tiene solo una provincia --",
+                options: ["A Islas Baleares", "B Aragón", "C Valencia"],
+                answer: "A Islas Baleares"
+            },
+            {
+                question: "En el norte de África están Ceuta y --",
+                options: ["A Almería", "B Melilla", "C Cádiz"],
+                answer: "B Melilla"
+            },
+            {
+                question: "Cuál de estas comunidades autónomas tiene más de una provincia --",
+                options: ["A Asturias", "B Madrid", "C Castilla La Mancha"],
+                answer: "C Castilla La Mancha"
+            },
+            {
+                question: "Cuál de los siguientes ríos desemboca en el Océano Atlántico --",
+                options: ["A el Tajo", "B el Ebro", "C el Júcar"],
+                answer: "A el Tajo"
+            },
+            {
+                question: "Cuál de estas provincias forma parte de la Comunidad de Castilla y León --",
+                options: ["A Burgos", "B Huesca", "C Guadalajara"],
+                answer: "A Burgos"
+            },
+            {
+                question: "Las temperaturas suaves con abundantes lluvias son propias del clima --",
+                options: ["A continental", "B oceánico", "C subtropical"],
+                answer: "B océánico"
+            },
+            {
+                question: "El clima de Canarias es --",
+                options: ["A Mediterráneo", "B oceánico", "C subtropical"],
+                answer: "C subtropical"
+            },
+            {
+                question: "El principal río que desemboca en el Mar Mediterráneo es el --",
+                options: ["A Ebro", "B Duero", "C Tajo"],
+                answer: "A Ebro"
+            },
+            {
+                question: "España está entre los países de Europa más --",
+                options: ["A lluviosos", "B montañosos", "C fríos"],
+                answer: "B montañosas"
+            },
+            {
+                question: "Qué sistema montañoso divide a la meseta española --",
+                options: ["A el ibérico", "B el central", "C el vético"],
+                answer: "B el central"
+            },
+            {
+                question: "Los Picos de Europa están en --",
+                options: ["A Andalucía", "B Cataluña", "C Asturias"],
+                answer: "C Asturias"
+            },
+            {
+                question: "Los personajes principales de la novela El Quijote son Don Quijote y --",
+                options: ["A don juan", "b Sancho Panza", "C doña Inés"],
+                answer: "B Sancho Panza"
+            },
+            {
+                question: "Cuál de las siguientes mujeres es una científica española reconocida mundialmente --",
+                options: ["A Montserrat Caballé", "B Ana María Matute", "C Margarita Salas"],
+                answer: "C Margarita Salas"
+            },
+            {
+                question: "Cuál de estas tres obras literarias es de Federico García Lorca --",
+                options: ["A El Quijote", "B el cantar de miocín", "C La casa de Bernarda Alba"],
+                answer: "C La casa de Bernarda Alba"
+            },
+            {
+                question: "María Zambrano, María Teresa León y Rosa Chacel son --",
+                options: ["A pintoras", "B escritoras", "C deportistas"],
+                answer: "B escritoras"
+            },
+            {
+                question: "El Concierto de Aranjuez es una composición de --",
+                options: ["A Manuel de Falla", "B Ainhoa Arteta", "C Joaquín Rodrigo"],
+                answer: "C Joaquín Rodrigo"
+            },
+            {
+                question: "Cuál es la profesión de Sara Baras --",
+                options: ["A escritora", "B bailaora", "C escultora"],
+                answer: "B bailaora"
+            },
+            {
+                question: "El Ballet Nacional de España realiza --",
+                options: ["A danza clásica", "B danza contemporánea", "C distintos estilos de danza"],
+                answer: "C distintos estilos de danza"
+            },
+            {
+                question: "Isabel Coiset es una --",
+                options: ["A cantante pop", "B bailarina clásica", "C directora de cine"],
+                answer: "C directora de cine"
+            },
+            {
+                question: "Una de las sopranos españolas más famosa es --",
+                options: ["A Montserrat Caballé", "B Rosalía", "C Lola Flores"],
+                answer: "A Montserrat Caballé"
+            },
+            {
+                question: "En qué ciudad de España hay una mezquita que es Patrimonio de la Humanidad --",
+                options: ["A Santiago de Compostela", "B Madrid", "C Córdoba"],
+                answer: "C Córdoba"
+            },
+            {
+                question: "En qué ciudad de España se encuentra la Alhambra que es Patrimonio de la Humanidad --",
+                options: ["A en Sevilla", "B en Córdoba", "C en Granada"],
+                answer: "C en Granada"
+            },
+            {
+                question: "En qué ciudad se encuentra el monumento la Sagrada Familia de Gaudí --",
+                options: ["A en Barcelona", "B en Granada", "C en Madrid"],
+                answer: "A en Barcelona"
+            },
+            {
+                question: "Pablo Picasso fue un famoso --",
+                options: ["A pintor", "B músi músico", "C escritor"],
+                answer: "A pintor"
+            },
+            {
+                question: "Cómo se llama la mayor institución pública dedicada a la investigación en España --",
+                options: ["A Real Academia Española RAE", "B Consejo Superior de Investigaciones Científicas CSIC", "C la Sociedad General de Autores SGAE"],
+                answer: "B Consejo Superior de Investigaciones Científicas CSIC"
+            },
+            {
+                question: "Paco de Lucía fue un famoso --",
+                options: ["A científico", "B guitarrista", "C pintor"],
+                answer: "B guitarrista"
+            },
+            {
+                question: "Cuál de estas manifestaciones folclóricas es Patrimonio Cultural Inmaterial de la Humanidad --",
+                options: ["A el flamenco", "B la jota", "C la sardana"],
+                answer: "A el flamenco"
+            },
+            {
+                question: "Cuál es la moneda común en muchos países de la Unión Europea --",
+                options: ["A el dólar", "B el peso", "C el euro"],
+                answer: "C el euro"
+            },
+            {
+                question: "La fiesta de la Tomatina se celebra en --",
+                options: ["A Mérida", "B Buñol", "C Santiago de Compostela"],
+                answer: "B Buñol"
+            },
+            {
+                question: "Normalmente en toda España las ferias del libro se celebran en --",
+                options: ["A invierno", "B primavera", "C verano"],
+                answer: "B primavera"
+            },
+            {
+                question: "La Liga y la Copa del Rey son competiciones de él --",
+                options: ["A natación", "B atletismo", "C fútbol"],
+                answer: "C fútbol"
+            },
+            {
+                question: "Quien ha recibido el Premio Nobel de Literatura --",
+                options: ["A María Zambrano", "B Pablo Picasso", "C Vicente Aleixandre"],
+                answer: "C Vicente Aleixandre"
+            },
+            {
+                question: "Quien fue el presidente de Gobierno durante la transición española --",
+                options: ["A Pedro Sánchez", "B Adolfo Suárez", "C José María Aznar"],
+                answer: "B Adolfo Suárez"
+            },
+            {
+                question: "Mireia Belmonte, Edurne Pasabán y Pau Gasol son --",
+                options: ["A deportistas", "B músicos", "C artistas"],
+                answer: "A deportistas"
+            },
+            {
+                question: "Qué toman los españoles la noche del treinta y uno de diciembre para celebrar el cambio de año --",
+                options: ["A lentejas", "B uvas", "C aceitunas"],
+                answer: "B uvas"
+            },
+            {
+                question: "En qué provincia se celebra la Romería del Rocío --",
+                options: ["A en Barcelona", "B en Huelva", "C en Sevilla"],
+                answer: "B en Huelva"
+            },
+            {
+                question: "El Festival de Sitges puedes --",
+                options: ["A ver películas de cine", "B escuchar música", "C asistir a obras de teatro"],
+                answer: "A ver películas de cine"
+            },
+            {
+                question: "Que escritora española escribe en otra lengua oficial de España --",
+                options: ["A Mercé Rodoreda", "B Almudena Grandes", "C Ana María Matute"],
+                answer: "A Merce Rodoreda"
+            },
+            {
+                question: "Qué Tres Culturas convivieron en la España medieval --",
+                options: ["A la cristiana la judía y la musulmana", "B la fenicia la judía y la musulmana", "C la griega la cristiana y la judía"],
+                answer: "A la cristiana la judía y la musulmana"
+            },
+            {
+                question: "El 6 de diciembre se celebra en España --",
+                options: ["A el día de la Constitución", "B la llegada de Colón a América", "C el día del libro"],
+                answer: "A el día de la Constitución"
+            },
+            {
+                question: "Qué ciudad española está el acueducto considerado Patrimonio de la Humanidad --",
+                options: ["A en Mérida", "B el Sevilla", "C en Segovia"],
+                answer: "C en Segovia"
+            },
+            {
+                question: "Quien recibió el Premio Nobel de Fisiología y Medicina en 1959 --",
+                options: ["A Santiago Ramón y Cajal", "B Margarita Salas", "C Severo Ochoa"],
+                answer: "C Severo Ochoa"
+            },
+            {
+                question: "El Premio Cervantes se da a --",
+                options: ["A actores", "B escritores", "C pintores"],
+                answer: "B escritores"
+            },
+            {
+                question: "los premios Goya están relacionados con --",
+                options: ["A el cine", "B la literatura", "C la pintura"],
+                answer: "A el cine"
+            },
+            {
+                question: "Qué premios promueven en España los valores científicos culturales y humanísticos que son patrimonio universal --",
+                options: ["A los premios Cervantes", "B los premios Princesa de Asturias", "C los premios Goya"],
+                answer: "B los premios Princesa de Asturias"
+            },
+            {
+                question: "Cuándo fueron los Juegos Olímpicos de Barcelona --",
+                options: ["A en 1992", "B en 1986", "C en 1998"],
+                answer: "A en 1992"
+            },
+            {
+                question: "El escritor Miguel de Cervantes nació en --",
+                options: ["A la mancha", "B Madrid", "C Alcalá de Henares"],
+                answer: "C Alcalá de Henares"
+            },
+            {
+                question: "Quien hace el DNI",
+                options: ["A la Policía Nacional", "B la Guardia Civil", "C la Policía Local"],
+                answer: "A la Policía Nacional"
+            },
+            {
+                question: "Cuál es el documento que muestra el lugar de residencia del titular --",
+                options: ["A el certificado de empadronamiento", "B la partida de nacimiento", "C el carnet de conducir"],
+                answer: "A el certificado de empadronamiento"
+            },
+            {
+                question: "para hacer el DNI debes acudir a --",
+                options: ["A una comisaría de policía", "B el Registro Civil", "C el Ayuntamiento"],
+                answer: "A una comisaría de policía"
+            },
+            {
+                question: "Cuál es la edad mínima para conducir un coche en España --",
+                options: ["A 16 años", "B 18 años", "C 20 años"],
+                answer: "B 18 años"
+            },
+            {
+                question: "El carnet de conducir se hace en --",
+                options: ["A la Dirección General de Tráfico DGT", "B la Policía Nacional", "C el Registro Civil"],
+                answer: "A la Dirección General de Tráfico de DGT"
+            },
+            {
+                question: "Para sacar el carnet de conducir hay que aprobar --",
+                options: ["A un examen teórico", "B un examen práctico", "C un examen teórico y otro práctico"],
+                answer: "C un examen teórico y otro práctico"
+            },
+            {
+                question: "Donde se tramita el libro de familia --",
+                options: ["A en el Registro Civil", "B en la Seguridad Social", "C en las comisarías de policía"],
+                answer: "A en el Registro Civil"
+            },
+            {
+                question: "La familia compuesta por un padre y dos hijos se llama --",
+                options: ["A nuclear", "B monoparental", "C numerosa"],
+                answer: "B monoparental"
+            },
+            {
+                question: "El tiempo que dura el permiso por nacimiento y cuidado de un menor para la madre y el padre es de --",
+                options: ["A 16 semanas", "B 14 semanas", "C 20 semanas"],
+                answer: "A 16 semanas"
+            },
+            {
+                question: "Cuál es la tasa máxima de alcohol en sangre permitida a los conductores en gramos por litro",
+                options: ["A 0.5", "B 0.7", "C 0.9"],
+                answer: "A 0,5"
+            },
+            {
+                question: "El tipo de vivienda más popular en España es --",
+                options: ["A el chalet", "B el piso", "C la villa"],
+                answer: "B el piso"
+            },
+            {
+                question: "Qué comunidad autónoma es conocida por la calidad de su aceite de oliva --",
+                options: ["A Cantabria", "B Andalucía", "C La Rioja"],
+                answer: "B Andalucía"
+            },
+            {
+                question: "Como se llama la revisión que deben pasar obligatoriamente los coches --",
+                options: ["A (IBI) impuestos sobre bienes inmuebles", "B (ITV) inspección técnica de vehículos", "C (ITE) inspección técnica de edificios"],
+                answer: "B (ITV) inspección técnica de vehículos"
+            },
+            {
+                question: "Que acompaña a la bebida en bares y restaurantes se llama --",
+                options: ["A bocadillo", "B tapa", "C primer plato"],
+                answer: "B tapa"
+            },
+            {
+                question: "Se denomina la Unión jurídica de dos personas que crea un vínculo conyugal mediante ciertos ritos o formalidades legales con obligaciones y derechos --",
+                options: ["A pareja de hecho", "B matrimonio", "C pareja formal"],
+                answer: "B matrimonio"
+            },
+            {
+                question: "Cuál de las siguientes familias es considerada numerosa en España --",
+                options: ["A una pareja con un hijo", "B una pareja con dos hijos", "C una pareja con tres hijos"],
+                answer: "C una pareja con tres hijos"
+            },
+            {
+                question: "En España está permitido el matrimonio --",
+                options: ["A sólo entre personas del mismo sexo", "B entre personas del mismo y diferente sexo", "C sólo entre personas de diferentes sexo"],
+                answer: "B entre personas del mismo y diferentes sexo"
+            },
+            {
+                question: "Los propietarios de perros deben registrarlos en --",
+                options: ["A el Ministerio de Justicia", "B la comisaría de policía", "C el Ayuntamiento"],
+                answer: "C el Ayuntamiento"
+            },
+            {
+                question: "Los principales ingredientes de la tortilla española son huevos y --",
+                options: ["A pimientos", "B patatas", "C tomates"],
+                answer: "B patatas"
+            },
+            {
+                question: "Cuál de los siguientes personajes es un reconocido cocinero dentro y fuera de España --",
+                options: ["A Ferran Adria", "B Rafael Nadal", "C y Josep Carreras"],
+                answer: "A Ferrán Adriá"
+            },
+            {
+                question: "Cuál de estos canales de comunicación es un organismo público --",
+                options: ["A la Cadena SER", "B Radio Nacional de España", "C Antena 3"],
+                answer: "B Radio Nacional de España"
+            },
+            {
+                question: "Cuál de las siguientes conductas no es adecuada en una comunidad de vecinos --",
+                options: ["A reducir el nivel de ruido entre las 10 y las 8 horas", "B depositar la basura en bolsas bien cerradas", "C lavar coches y motos en el garaje"],
+                answer: "C lavar coches y motos en el garaje"
+            },
+            {
+                question: "La sangría es una bebida compuesta por refrescos vino y --",
+                options: ["A fruta", "B té", "C agua"],
+                answer: "A fruta"
+            },
+            {
+                question: "La sidra es una bebida originaria de --",
+                options: ["A Asturias", "B Cantabria", "C Galicia"],
+                answer: "A Asturias"
+            },
+            {
+                question: "Los españoles tienen dos apellidos el primer apellido es --",
+                options: ["A el de la madre", "B el del Padre", "C el de la madre o el del Padre"],
+                answer: "C el de la madre o el del padre"
+            },
+            {
+                question: "La Fiesta Nacional de España es el --",
+                options: ["A 6 de diciembre", "B 15 de agosto", "C 12 de octubre"],
+                answer: "C 12 de Octubre"
+            },
+            {
+                question: "Los comercios que abren normalmente de lunes a sábado tienen un horario aproximado de --",
+                options: ["A de nueve de la mañana a 5 de la tarde", "B de 10 de la mañana a 8 de la tarde", "C de ocho de la mañana a 11 de la noche"],
+                answer: "B de 10 de la mañana a 8 de la tarde"
+            },
+            {
+                question: "El pasaporte se hace en --",
+                options: ["A el Registro Civil", "B una comisaría de policía", "C el Ayuntamiento"],
+                answer: "B una comisaría de policía"
+            },
+            {
+                question: "El documento identificativo obligatorio para los españoles dentro del territorio nacional es --",
+                options: ["A el pasaporte", "B el Documento Nacional de Identidad DNI", "C el número de identificación fiscal NIF"],
+                answer: "B el Documento Nacional de Identidad DNI"
+            },
+            {
+                question: "Cuál de estos alimentos cuenta con una reconocida denominación de origen --",
+                options: ["A cerveza", "B café", "C aceite de oliva"],
+                answer: "C aceite de oliva"
+            },
+            {
+                question: "El DNI se hace --",
+                options: ["A por internet", "B en persona", "C por teléfono"],
+                answer: "B en persona"
+            },
+            {
+                question: "Ell horario de Canarias con respecto a la península es de --",
+                options: ["A dos horas menos", "B una hora menos", "C una hora más"],
+                answer: "B una hora menos"
+            },
+            {
+                question: "Para acceder a la universidad se debe superar una prueba de evaluación llamada --",
+                options: ["A ESAU", "B ECAUD", "C EBAU"],
+                answer: "C EBAU"
+            },
+            {
+                question: "Cuál de estos productos importa España de otros países en mayor cantidad que exporta --",
+                options: ["A petróleo", "B calzado", "C medicamentos"],
+                answer: "A petróleo"
+            },
+            {
+                question: "El Estado español aplica la política fiscal a los ciudadanos a través del pago de --",
+                options: ["A impuestos directos", "B impuestos indirectos", "C impuestos directos e indirectos"],
+                answer: "C impuestos directos e indirectos"
+            },
+            {
+                question: "En España hay pruebas especiales para el acceso de los adultos a la universidad a partir de los --",
+                options: ["A 18 años", "B 23 años", "C 25 años"],
+                answer: "C 25 años"
+            },
+            {
+                question: "Dónde puede encontrarse la siguiente norma dejar salir antes de entrar --",
+                options: ["A en el transporte público", "B en parques y jardines", "C en instalaciones deportivas"],
+                answer: "A en el transporte público"
+            },
+            {
+                question: "El bachillerato en España --",
+                options: ["A es obligatorio", "B se compone de dos cursos académicos", "C es la enseñanza a alumnos de 14 a 16 años"],
+                answer: "B se compone de dos cursos académicos"
+            },
+            {
+                question: "El Impuesto sobre el Valor Añadido IVA forma parte de los --",
+                options: ["A impuestos indirectos", "B impuestos sobre la renta", "C Impuesto sobre Sociedades"],
+                answer: "A impuestos indirectos"
+            },
+            {
+                question: "Qué número reciben los trabajadores al comenzar su primer empleo --",
+                options: ["A el de la Seguridad Social", "B el del pasaporte", "C el número de servicio"],
+                answer: "A el de la seguridad social"
+            },
+            {
+                question: "Los colegios públicos --",
+                options: ["A pueden decidir su número de plazas", "B puede contratar los profesores que quieran", "C están financiados por el Gobierno"],
+                answer: "C están financiados por el Gobierno"
+            },
+            {
+                question: "Cuál de estos puertos se encuentra entre los principales de España --",
+                options: ["A Tenerife", "B Alicante", "C Las Palmas"],
+                answer: "C Las Palmas"
+            },
+            {
+                question: "Un colegio concertado es un colegio privado que --",
+                options: ["A recibe subvenciones del Gobierno", "B financian los padres de los alumnos", "C recibe dinero de los bancos"],
+                answer: "A recibe subvenciones del Gobierno"
+            },
+            {
+                question: "España exporta productos principalmente a países --",
+                options: ["A de Hispanoamérica", "B de la Unión Europea", "C del norte de África"],
+                answer: "B de la Unión Europea"
+            },
+            {
+                question: "Las bibliotecas públicas son gratuitas para --",
+                options: ["A todos", "B los parados", "C los niños"],
+                answer: "A todos"
+            },
+            {
+                question: "Cuál de estos productos se exporta a España más que importa --",
+                options: ["A gas", "B ropa", "C calzado"],
+                answer: "C calzado"
+            },
+            {
+                question: "Una persona mayor de dieciocho años puede obtener el título de Graduado en Educación Secundaria Obligatoria en --",
+                options: ["A un Centro de Educación de Personas Adultas", "B un centro de enseñanza primaria", "C una universidad"],
+                answer: "A un centro de educación de personas adultas"
+            },
+            {
+                question: "La formación profesional --",
+                options: ["A es para mayores de 25 años", "B puede ser de grado medio o superior", "C es obligatorio"],
+                answer: "B puede ser de grado medio o superior"
+            },
+            {
+                question: "Cómo se llama el lugar con un horario establecido en el que se presta la atención médica básica Medicina de Familia pediatría y enfermería --",
+                options: ["A hospital", "B centro de salud", "C farmacia"],
+                answer: "B centro de salud"
+            },
+            {
+                question: "Para cuantos años vale la tarjeta sanitaria europea --",
+                options: ["A para un año", "B para dos años", "C para diez años"],
+                answer: "B para dos años"
+            },
+            {
+                question: "A qué hora se cena normalmente en España --",
+                options: ["A las 18 horas", "B a las 20 horas", "C a las 21 o 22 horas"],
+                answer: "C a las 21 o 22 horas"
+            },
+            {
+                question: "Cuál es el número de teléfono único para cualquier emergencia --",
+                options: ["A 060", "B 112", "C 911"],
+                answer: "B 112"
+            },
+            {
+                question: "Los viajes de vacaciones para las personas mayores de 65 años los organiza --",
+                options: ["A el IEF Instituto de Estudios Fiscales", "B el Imserso Instituto de mayores y Servicios Sociales", "C el ICO Instituto de Crédito Oficial"],
+                answer: "B el Imserso Instituto de mayores y servicios sociales"
+            },
+            {
+                question: "Una persona que tiene a su cargo hijos menores de dieciocho años o hijos mayores de edad discapacitados puede recibir una --",
+                options: ["A pensión de viudedad", "B prestación por desempleo", "C ayuda familiar"],
+                answer: "C ayuda familiar"
+            },
+            {
+                question: "Cómo se llama el tren español de alta velocidad --",
+                options: ["A AVE", "B TGV", "C Eurostars"],
+                answer: "A AVE"
+            },
+            {
+                question: "La organización que trabaja para conseguir la integración de las personas con discapacidad visual es --",
+                options: ["A la ONCE", "B UNICEF", "C Cáritas"],
+                answer: "A la ONCE"
+            },
+            {
+                question: "Cuál de los siguientes no es un medio público de comunicación audiovisual --",
+                options: ["A Televisión Española", "B Instituto de la Cinematografía y de las artes audiovisuales", "C Radio Nacional de España"],
+                answer: "B Instituto de la Cinematografía y de las artes audiovisuales"
+            },
+            {
+                question: "Cuál es el canal de televisión estatal que transmite noticias de actualidad nacional e internacional continuamente --",
+                options: ["A Teledeporte", "B la 1", "C Canal 24 Horas"],
+                answer: "C Canal 24 Horas"
+            },
+            {
+                question: "El teléfono gratuito para las víctimas de violencia de género es el --",
+                options: ["A 091", "B 112", "C 016"],
+                answer: "C 016"
+            },
+            {
+                question: "En España la red de trenes puede ser de larga distancia de media distancia y --",
+                options: ["A de cercanías", "B rural", "C transnacional"],
+                answer: "A de cercanías"
+            },
+            {
+                question: "El Ministerio de Derechos Sociales y agenda 2030 ofrece --",
+                options: ["A ayudas a mayores de 65 años", "B acceso a viviendas sociales", "C reagrupación familiar"],
+                answer: "A ayudas a mayores de 65 años"
+            },
+            {
+                question: "Cuando compramos doscientos cincuenta gramos de un alimento estamos comprando --",
+                options: ["A medio kilo", "B un cuarto de kilo", "C un tercio de kilo"],
+                answer: "B un cuarto de kilo"
+            },
+            {
+                question: "Si compramos una botella de agua de 750 ml compramos una botella de --",
+                options: ["A tres cuartos de litro", "B medio litro", "C 1 L"],
+                answer: "A tres cuartos de litro"
+            },
+            {
+                question: "Dónde se venden las medicinas en España --",
+                options: ["A hospital", "B centro de salud", "C farmacia"],
+                answer: "C farmacia"
+            },
+            {
+                question: "Cuál de estas tres recomendaciones podemos encontrar en un parque --",
+                options: ["A respete las plantas y el mobiliario urbano", "B es conveniente abonar el billete con el importe exacto", "C mantenga la distancia de seguridad con el vehículo precedente"],
+                answer: "A respete las plantas y el mobiliario urbano"
+            },
+            {
+                question: "Cuál de las siguientes cosas es obligatoria para el propietario de un coche en España --",
+                options: ["A el garaje", "B el seguro", "C la alarma"],
+                answer: "B el seguro"
+            },
+            {
+                question: "El aeropuerto Adolfo Suárez está en",
+                options: ["A Barcelona", "B Madrid", "C Bilbao"],
+                answer: "B Madrid"
+            },
+            {
+                question: "Enn un coche es obligatorio el uso del cinturón de seguridad --",
+                options: ["A solo en el asiento del conductor", "B en los asientos delanteros", "C en todos los asientos"],
+                answer: "C en todos los asientos"
+            },
+            {
+                question: "El límite de velocidad en una autopista es de --",
+                options: ["A 100 km/hora", "B 120 km/hora", "C 70 km/h"],
+                answer: "B 120 km hora"
+            },
+            {
+                question: "Ceder el asiento a las personas con movilidad reducida es una norma que encontramos indicada en --",
+                options: ["A el transporte público", "B las bibliotecas", "C los museos"],
+                answer: "A el transporte público"
+            },
+            {
+                question: "En qué caso se retira el permiso de conducir --",
+                options: ["A por accidente grave", "B por la pérdida de los puntos", "C por exceso de velocidad"],
+                answer: "B por la pérdida de los puntos"
+            },
+            {
+                question: "El acrónimo Renfe corresponde --",
+                options: ["A red nacional de fondos europeos", "B Red Nacional de Ferrocarriles Españoles", "C red nacional de fundaciones estatales"],
+                answer: "B red nacional de los Ferrocarriles Españoles"
+            },
+            {
+                question: "Los españoles necesitan el pasaporte para viajar a --",
+                options: ["A Italia", "B China", "C Alemania"],
+                answer: "B China"
+            },
+            {
+                question: "Cuál es la edad mínima para trabajar en España --",
+                options: ["A 16 años", "B 18 años", "C 21 años"],
+                answer: "A 16 años"
+            },
+            {
+                question: "Cuál es el sector de mayor peso en la economía española --",
+                options: ["A agricultura", "B servicios", "C construcción"],
+                answer: "B servicios"
+            },
+            {
+                question: "España es innovadora en el sector de --",
+                options: ["A la ingeniería aeroespacial", "B las energías renovables", "C la energía nuclear"],
+                answer: "B las energías renovables"
+            },
+            {
+                question: "La norma principal que regula los derechos de los trabajadores en España es --",
+                options: ["A la Constitución", "B el Estatuto de los Trabajadores", "C el Servicio Público de Empleo Estatal"],
+                answer: "B el Estatuto de los Trabajadores"
+            },
+            {
+                question: "Que está abierto 24 horas si es necesario --",
+                options: ["A farmacias", "B estancos", "C quioscos"],
+                answer: "A farmacias"
+            },
+            {
+                question: "En España la enseñanza básica es --",
+                options: ["A voluntaria y gratuita", "B obligatoria y de pago", "C obligatoria y gratuita"],
+                answer: "C obligatoria y gratuita"
+            },
+            {
+                question: "En la economía española el peso mayor recae sobre el sector de --",
+                options: ["A la agricultura", "B los servicios", "C la industria"],
+                answer: "B los servicios"
+            },
+            {
+                question: "Las Escuelas Oficiales de Idiomas --",
+                options: ["A son centros de enseñanza privada", "B son para mayores de 16 años", "C dependen del Instituto Cervantes"],
+                answer: "B son para mayores de 16"
+            },
+            {
+                question: "Cómo se llama el documento oficial que recoge las fechas de todos los contratos de trabajo de una persona --",
+                options: ["A informe de vida laboral", "B recibo de finiquito", "C certificado de profesionalidad"],
+                answer: "A informe de vida laboral"
+            },
+            {
+                question: "Impuesto pagan los residentes en España en función de la renta o el dinero ganado salario ingresos como autónomos etcétera --",
+                options: ["A el IRPF Impuesto sobre la Renta de las Personas Físicas", "B el IVA Impuesto sobre el Valor Añadido", "C ISS Impuesto sobre Sociedades"],
+                answer: "A el IRPF Impuesto sobre la Renta de las Personas Físicas"
+            },
+            {
+                question: "Cuál de estas comunidades autónomas es más rica --",
+                options: ["A País Vasco", "B Galicia", "C La Rioja"],
+                answer: "A País Vasco"
+            }
